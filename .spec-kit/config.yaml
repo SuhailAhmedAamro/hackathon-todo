@@ -1,0 +1,154 @@
+# Spec-Kit Configuration for Evolution of Todo Hackathon II
+# This file defines the project structure and phase mapping
+
+project:
+  name: "Evolution of Todo"
+  version: "2.0.0"
+  description: "Multi-phase todo application evolution from CLI to Cloud"
+
+spec_root: "./specs"
+skills_root: "./skills"
+docs_root: "./docs"
+
+# Phase mapping - defines the progression
+phases:
+  - id: "phase-1"
+    name: "Console CLI"
+    directory: "./phase-1-console"
+    description: "Python CLI application with SQLite"
+    tech_stack:
+      - Python 3.11+
+      - Click/Typer
+      - SQLite
+    specs:
+      - specs/phases/phase-1-console.md
+      - specs/features/task-crud.md
+      - specs/database/schema.md
+
+  - id: "phase-2"
+    name: "Web Application"
+    directory: "./phase-2-web"
+    description: "Next.js frontend + FastAPI backend"
+    tech_stack:
+      - Next.js 14
+      - FastAPI
+      - PostgreSQL
+      - React
+      - Tailwind CSS
+    specs:
+      - specs/phases/phase-2-web.md
+      - specs/features/task-crud.md
+      - specs/features/authentication.md
+      - specs/api/rest-endpoints.md
+      - specs/database/schema.md
+      - specs/ui/components.md
+      - specs/ui/pages.md
+
+  - id: "phase-3"
+    name: "Chatbot Interface"
+    directory: "./phase-3-chatbot"
+    description: "MCP-enabled chatbot for task management"
+    tech_stack:
+      - MCP (Model Context Protocol)
+      - Claude API
+      - FastAPI
+      - WebSocket
+    specs:
+      - specs/phases/phase-3-chatbot.md
+      - specs/features/chatbot.md
+      - specs/api/mcp-tools.md
+      - specs/ui/chat-interface.md
+
+  - id: "phase-4"
+    name: "Kubernetes Deployment"
+    directory: "./phase-4-kubernetes"
+    description: "Container orchestration with K8s"
+    tech_stack:
+      - Docker
+      - Kubernetes
+      - Helm
+      - Ingress
+    specs:
+      - specs/phases/phase-4-kubernetes.md
+
+  - id: "phase-5"
+    name: "Cloud-Native"
+    directory: "./phase-5-cloud"
+    description: "Cloud deployment with IaC"
+    tech_stack:
+      - Terraform
+      - CloudFormation
+      - AWS/GCP/Azure
+      - Managed Services
+    specs:
+      - specs/phases/phase-5-cloud.md
+
+# Spec categories
+spec_categories:
+  features:
+    path: "specs/features"
+    description: "Feature specifications and user stories"
+    template: ".spec-kit/prompts/feature-spec-template.md"
+
+  api:
+    path: "specs/api"
+    description: "API contracts, endpoints, and schemas"
+    template: ".spec-kit/prompts/api-spec-template.md"
+
+  database:
+    path: "specs/database"
+    description: "Database schemas and migration strategies"
+    template: ".spec-kit/prompts/database-spec-template.md"
+
+  ui:
+    path: "specs/ui"
+    description: "UI components, pages, and design system"
+    template: ".spec-kit/prompts/ui-spec-template.md"
+
+# Reusable skills
+skills:
+  - name: "python-cli-skill"
+    file: "skills/python-cli-skill.md"
+    description: "CLI development patterns and best practices"
+
+  - name: "spec-writer-skill"
+    file: "skills/spec-writer-skill.md"
+    description: "Writing consistent, comprehensive specifications"
+
+  - name: "kubernetes-deployer-skill"
+    file: "skills/kubernetes-deployer-skill.md"
+    description: "K8s deployment patterns and troubleshooting"
+
+  - name: "dockerizer"
+    file: "skills/dockerizer.py"
+    description: "Automated Docker image creation"
+
+# Claude Code integration
+claude_integration:
+  root_guide: "./CLAUDE.md"
+  phase_guides:
+    - "./phase-1-console/CLAUDE.md"
+    - "./phase-2-web/CLAUDE.md"
+    - "./phase-3-chatbot/CLAUDE.md"
+    - "./phase-4-kubernetes/CLAUDE.md"
+    - "./phase-5-cloud/CLAUDE.md"
+  category_guides:
+    - "./specs/CLAUDE.md"
+    - "./specs/features/CLAUDE.md"
+    - "./specs/api/CLAUDE.md"
+    - "./specs/database/CLAUDE.md"
+    - "./specs/ui/CLAUDE.md"
+    - "./skills/CLAUDE.md"
+
+# Development workflow
+workflow:
+  spec_first: true
+  require_spec_review: true
+  cross_phase_reuse: true
+
+# Quality gates
+quality:
+  require_tests: true
+  code_coverage_minimum: 80
+  require_documentation: true
+  require_type_hints: true

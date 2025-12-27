@@ -1,0 +1,169 @@
+# Blueprint: Console App (Phase 1)
+# Python CLI todo application with SQLite
+
+metadata:
+  name: console-todo-app
+  version: 1.0.0
+  phase: 1
+  description: Python console CLI for task management
+  tags: [python, cli, sqlite, typer]
+
+structure:
+  root: phase-1-console
+  directories:
+    - src/
+    - src/models/
+    - src/commands/
+    - src/utils/
+    - tests/
+    - data/
+
+files:
+  # Main entry point
+  - path: src/main.py
+    template: cli_main
+    description: CLI application entry point
+
+  # Models
+  - path: src/models/__init__.py
+    content: |
+      from .task import Task, Priority, Status
+      __all__ = ["Task", "Priority", "Status"]
+
+  - path: src/models/task.py
+    template: task_model_sqlite
+    reuse_from: skills/models/task.py
+
+  # Database
+  - path: src/database.py
+    template: sqlite_database
+    description: SQLite database setup and session management
+
+  # Commands
+  - path: src/commands/__init__.py
+    content: ""
+
+  - path: src/commands/add.py
+    template: cli_add_command
+
+  - path: src/commands/list.py
+    template: cli_list_command
+
+  - path: src/commands/update.py
+    template: cli_update_command
+
+  - path: src/commands/delete.py
+    template: cli_delete_command
+
+  - path: src/commands/complete.py
+    template: cli_complete_command
+
+  # Utils
+  - path: src/utils/__init__.py
+    content: ""
+
+  - path: src/utils/formatters.py
+    template: cli_formatters
+    description: Output formatting (tables, colors)
+
+  # Tests
+  - path: tests/__init__.py
+    content: ""
+
+  - path: tests/test_models.py
+    template: test_models
+
+  - path: tests/test_commands.py
+    template: test_commands
+
+  # Configuration
+  - path: requirements.txt
+    content: |
+      typer[all]==0.9.0
+      sqlalchemy==2.0.23
+      rich==13.7.0
+      python-dateutil==2.8.2
+
+  - path: pytest.ini
+    content: |
+      [pytest]
+      testpaths = tests
+      python_files = test_*.py
+      python_classes = Test*
+      python_functions = test_*
+
+  - path: .gitignore
+    content: |
+      __pycache__/
+      *.py[cod]
+      venv/
+      .pytest_cache/
+      data/*.db
+
+  - path: README.md
+    template: phase1_readme
+
+dependencies:
+  python: ">=3.11"
+  packages:
+    - typer
+    - sqlalchemy
+    - rich
+    - python-dateutil
+
+configuration:
+  database:
+    type: sqlite
+    path: data/todos.db
+
+  cli:
+    app_name: todo
+    version: 1.0.0
+
+commands:
+  init: python src/main.py init
+  add: python src/main.py add "Task title"
+  list: python src/main.py list
+  complete: python src/main.py complete <task_id>
+  delete: python src/main.py delete <task_id>
+
+testing:
+  framework: pytest
+  coverage_target: 80
+  commands:
+    - pytest
+    - pytest --cov=src --cov-report=html
+
+deployment:
+  type: local
+  distribution: pip package
+  entry_point: src/main.py
+
+success_criteria:
+  - All CLI commands functional
+  - Data persists across sessions
+  - Test coverage >= 80%
+  - User-friendly output formatting
+
+reusable_components:
+  extract_to_skills:
+    - src/models/task.py → skills/models/task.py
+    - src/utils/validators.py → skills/utils/validators.py
+    - src/utils/helpers.py → skills/utils/helpers.py
+
+next_phase:
+  phase: 2
+  reuse:
+    - Task model structure
+    - Validation logic
+    - Helper functions
+  evolution:
+    - Add web UI
+    - Replace SQLite with PostgreSQL
+    - Add user authentication
+    - Create REST API
+
+---
+# Usage:
+# python skills/blueprint_generator.py console-app.yaml
+# This generates the complete Phase 1 structure

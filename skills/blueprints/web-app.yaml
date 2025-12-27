@@ -1,0 +1,281 @@
+# Blueprint: Web Application (Phase 2)
+# Next.js frontend + FastAPI backend with PostgreSQL
+
+metadata:
+  name: web-todo-app
+  version: 1.0.0
+  phase: 2
+  description: Full-stack web application with Next.js and FastAPI
+  tags: [nextjs, fastapi, postgresql, jwt, react]
+
+structure:
+  root: phase-2-web
+  services:
+    - frontend
+    - backend
+    - database
+
+frontend:
+  framework: nextjs
+  version: "14.0.0"
+  language: typescript
+
+  structure:
+    - src/app/
+    - src/components/
+    - src/lib/
+    - public/
+
+  files:
+    - path: src/app/layout.tsx
+      template: nextjs_root_layout
+
+    - path: src/app/page.tsx
+      template: dashboard_page
+
+    - path: src/app/auth/login/page.tsx
+      template: login_page
+
+    - path: src/app/tasks/page.tsx
+      template: tasks_page
+
+    - path: src/components/TaskList.tsx
+      template: task_list_component
+
+    - path: src/components/TaskCard.tsx
+      template: task_card_component
+
+    - path: src/components/TaskForm.tsx
+      template: task_form_component
+
+    - path: src/lib/api.ts
+      template: api_client
+
+    - path: src/lib/auth.ts
+      template: auth_client
+
+  dependencies:
+    - react: ^18
+    - next: ^14
+    - tailwindcss: ^3
+    - react-hook-form: ^7
+    - zod: ^3
+    - axios: ^1
+
+  configuration:
+    tailwind: true
+    typescript: true
+    app_router: true
+    server_components: true
+
+backend:
+  framework: fastapi
+  version: "0.109.0"
+  language: python
+  orm: sqlalchemy
+
+  structure:
+    - src/api/
+    - src/models/
+    - src/schemas/
+    - src/database/
+    - alembic/versions/
+    - tests/
+
+  files:
+    - path: src/main.py
+      template: fastapi_main
+
+    - path: src/api/auth.py
+      template: auth_endpoints
+
+    - path: src/api/tasks.py
+      template: task_endpoints
+
+    - path: src/models/user.py
+      template: user_model
+      reuse_from: skills/models/user.py
+
+    - path: src/models/task.py
+      template: task_model_postgresql
+      reuse_from: skills/models/task.py
+
+    - path: src/schemas/user.py
+      template: user_schemas
+
+    - path: src/schemas/task.py
+      template: task_schemas
+
+    - path: src/database.py
+      template: postgresql_database
+
+    - path: src/auth.py
+      template: jwt_auth
+
+    - path: alembic.ini
+      template: alembic_config
+
+  dependencies:
+    - fastapi: ^0.109
+    - sqlalchemy: ^2.0
+    - alembic: ^1.13
+    - pydantic: ^2.0
+    - python-jose: ^3.3
+    - passlib: ^1.7
+    - python-multipart: ^0.0.6
+    - psycopg2-binary: ^2.9
+
+database:
+  type: postgresql
+  version: "15"
+  connection: postgresql://user:pass@localhost:5432/tododb
+
+  tables:
+    - users
+    - tasks
+    - tags
+    - task_tags
+
+  migrations:
+    tool: alembic
+    directory: alembic/versions
+
+docker:
+  compose: true
+  services:
+    - postgres
+    - redis
+    - backend
+    - frontend
+
+  compose_file: |
+    version: '3.8'
+    services:
+      postgres:
+        image: postgres:15-alpine
+        environment:
+          POSTGRES_DB: tododb
+          POSTGRES_USER: todouser
+          POSTGRES_PASSWORD: todopassword
+        ports:
+          - "5432:5432"
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - "6379:6379"
+
+      backend:
+        build: ./backend
+        ports:
+          - "8000:8000"
+        depends_on:
+          - postgres
+          - redis
+        environment:
+          DATABASE_URL: postgresql://todouser:todopassword@postgres:5432/tododb
+          REDIS_URL: redis://redis:6379/0
+
+      frontend:
+        build: ./frontend
+        ports:
+          - "3000:3000"
+        depends_on:
+          - backend
+        environment:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+
+    volumes:
+      postgres_data:
+
+authentication:
+  method: JWT
+  token_expiry: 30m
+  refresh_token_expiry: 7d
+  algorithm: HS256
+
+api:
+  base_url: /api
+  version: v1
+  docs_url: /docs
+  redoc_url: /redoc
+
+  endpoints:
+    auth:
+      - POST /auth/register
+      - POST /auth/login
+      - POST /auth/refresh
+      - POST /auth/logout
+      - GET /auth/me
+
+    tasks:
+      - GET /tasks
+      - POST /tasks
+      - GET /tasks/:id
+      - PUT /tasks/:id
+      - DELETE /tasks/:id
+      - PATCH /tasks/:id/complete
+
+    tags:
+      - GET /tags
+      - POST /tags
+      - PUT /tags/:id
+      - DELETE /tags/:id
+
+testing:
+  backend:
+    framework: pytest
+    tools: [pytest-cov, httpx]
+    coverage_target: 80
+
+  frontend:
+    framework: jest
+    tools: [testing-library, jest-dom]
+    coverage_target: 80
+
+commands:
+  backend:
+    dev: uvicorn src.main:app --reload
+    test: pytest --cov=src
+    migrate: alembic upgrade head
+
+  frontend:
+    dev: npm run dev
+    build: npm run build
+    test: npm test
+
+deployment:
+  type: docker-compose
+  ports:
+    frontend: 3000
+    backend: 8000
+    postgres: 5432
+    redis: 6379
+
+success_criteria:
+  - User registration and login functional
+  - All CRUD operations working
+  - Responsive design (mobile/tablet/desktop)
+  - API tests passing
+  - Frontend tests passing
+  - WCAG 2.1 AA compliant
+
+reusable_components:
+  from_phase_1:
+    - Task model structure
+    - Validation logic
+
+  extract_to_skills:
+    - JWT authentication logic
+    - API client utilities
+    - Form validation schemas
+
+next_phase:
+  phase: 3
+  additions:
+    - MCP server
+    - Chatbot interface
+    - Natural language processing
+    - WebSocket communication

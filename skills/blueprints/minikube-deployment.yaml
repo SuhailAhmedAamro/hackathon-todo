@@ -1,0 +1,278 @@
+# Blueprint: Minikube Deployment (Phase 4)
+# Kubernetes deployment for local development and testing
+
+metadata:
+  name: minikube-todo-deployment
+  version: 1.0.0
+  phase: 4
+  description: Kubernetes deployment using minikube for local testing
+  tags: [kubernetes, minikube, docker, helm]
+
+prerequisites:
+  tools:
+    - docker: ">=20.10"
+    - kubectl: ">=1.28"
+    - minikube: ">=1.32"
+    - helm: ">=3.0"
+
+  setup:
+    - minikube start --cpus=4 --memory=8192
+    - kubectl cluster-info
+    - helm version
+
+docker_images:
+  build_commands:
+    frontend:
+      context: ../phase-2-web/frontend
+      dockerfile: Dockerfile.frontend
+      tag: evolution-todo-frontend:latest
+      command: docker build -t evolution-todo-frontend:latest -f docker/Dockerfile.frontend ../phase-2-web/frontend
+
+    backend:
+      context: ../phase-2-web/backend
+      dockerfile: Dockerfile.backend
+      tag: evolution-todo-backend:latest
+      command: docker build -t evolution-todo-backend:latest -f docker/Dockerfile.backend ../phase-2-web/backend
+
+    mcp:
+      context: ../phase-3-chatbot/mcp-server
+      dockerfile: Dockerfile.mcp
+      tag: evolution-todo-mcp:latest
+      command: docker build -t evolution-todo-mcp:latest -f docker/Dockerfile.mcp ../phase-3-chatbot/mcp-server
+
+  load_to_minikube:
+    - minikube image load evolution-todo-frontend:latest
+    - minikube image load evolution-todo-backend:latest
+    - minikube image load evolution-todo-mcp:latest
+
+kubernetes_resources:
+  namespace:
+    name: evolution-todo
+    create: kubectl create namespace evolution-todo
+
+  deployments:
+    frontend:
+      replicas: 2
+      image: evolution-todo-frontend:latest
+      port: 3000
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+
+    backend:
+      replicas: 3
+      image: evolution-todo-backend:latest
+      port: 8000
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+    mcp:
+      replicas: 2
+      image: evolution-todo-mcp:latest
+      port: 3000
+      resources:
+        requests:
+          cpu: 150m
+          memory: 192Mi
+        limits:
+          cpu: 300m
+          memory: 384Mi
+
+    postgres:
+      replicas: 1
+      type: StatefulSet
+      image: postgres:15-alpine
+      port: 5432
+      storage: 10Gi
+      resources:
+        requests:
+          cpu: 250m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+  services:
+    frontend:
+      type: ClusterIP
+      port: 80
+      targetPort: 3000
+
+    backend:
+      type: ClusterIP
+      port: 80
+      targetPort: 8000
+
+    mcp:
+      type: ClusterIP
+      port: 80
+      targetPort: 3000
+
+    postgres:
+      type: ClusterIP
+      port: 5432
+
+  configmaps:
+    app-config:
+      data:
+        API_URL: "http://backend:80"
+        DATABASE_HOST: "postgres"
+        LOG_LEVEL: "INFO"
+
+  secrets:
+    app-secrets:
+      type: Opaque
+      data:
+        database-password: <base64-encoded>
+        jwt-secret: <base64-encoded>
+        anthropic-api-key: <base64-encoded>
+
+  ingress:
+    enabled: true
+    className: nginx
+    host: todo.local
+    paths:
+      - path: /
+        service: frontend
+      - path: /api
+        service: backend
+
+  horizontal_pod_autoscaler:
+    backend:
+      minReplicas: 2
+      maxReplicas: 10
+      targetCPUUtilization: 70
+
+helm_chart:
+  install:
+    command: helm install evolution-todo ./helm/evolution-todo -n evolution-todo
+    values: values-dev.yaml
+
+  upgrade:
+    command: helm upgrade evolution-todo ./helm/evolution-todo -n evolution-todo
+
+  rollback:
+    command: helm rollback evolution-todo -n evolution-todo
+
+deployment_workflow:
+  steps:
+    1_build_images:
+      - docker build frontend
+      - docker build backend
+      - docker build mcp
+
+    2_load_to_minikube:
+      - minikube image load evolution-todo-frontend
+      - minikube image load evolution-todo-backend
+      - minikube image load evolution-todo-mcp
+
+    3_create_namespace:
+      - kubectl create namespace evolution-todo
+
+    4_deploy_with_helm:
+      - helm install evolution-todo ./helm/evolution-todo -n evolution-todo
+
+    5_verify_deployment:
+      - kubectl get all -n evolution-todo
+      - kubectl get pods -n evolution-todo
+
+    6_access_application:
+      - minikube service frontend -n evolution-todo
+      - kubectl port-forward svc/frontend 3000:80 -n evolution-todo
+
+monitoring:
+  commands:
+    get_pods: kubectl get pods -n evolution-todo
+    get_services: kubectl get svc -n evolution-todo
+    get_ingress: kubectl get ingress -n evolution-todo
+    logs_backend: kubectl logs -f deployment/backend -n evolution-todo
+    describe_pod: kubectl describe pod <pod-name> -n evolution-todo
+
+troubleshooting:
+  image_pull_errors:
+    issue: ImagePullBackOff
+    solution:
+      - minikube image load <image-name>
+      - Check imagePullPolicy: IfNotPresent
+
+  pod_not_starting:
+    check:
+      - kubectl describe pod <pod-name> -n evolution-todo
+      - kubectl logs <pod-name> -n evolution-todo
+    common_causes:
+      - Resource limits too low
+      - Image not found
+      - Configuration error
+
+  service_not_accessible:
+    check:
+      - kubectl get svc -n evolution-todo
+      - kubectl get endpoints -n evolution-todo
+    solutions:
+      - Port forward: kubectl port-forward svc/frontend 3000:80 -n evolution-todo
+      - Minikube tunnel: minikube tunnel
+
+testing:
+  smoke_tests:
+    - Check all pods running
+    - Access frontend UI
+    - Test API endpoints
+    - Create a task via UI
+    - Verify database persistence
+
+  load_tests:
+    tool: k6 or locust
+    target: http://<minikube-ip>:3000
+    scenarios:
+      - 10 concurrent users
+      - 100 requests per minute
+
+cleanup:
+  commands:
+    - helm uninstall evolution-todo -n evolution-todo
+    - kubectl delete namespace evolution-todo
+    - minikube stop
+    - minikube delete
+
+success_criteria:
+  - All pods reach Ready state
+  - Health checks passing
+  - Frontend accessible via browser
+  - API endpoints responding
+  - Database persistence working
+  - Zero-downtime rolling updates
+
+files_generated:
+  - k8s/deployments/frontend.yaml
+  - k8s/deployments/backend.yaml
+  - k8s/deployments/mcp.yaml
+  - k8s/deployments/postgres.yaml
+  - k8s/services/frontend.yaml
+  - k8s/services/backend.yaml
+  - k8s/services/mcp.yaml
+  - k8s/services/postgres.yaml
+  - k8s/configmaps/app-config.yaml
+  - k8s/secrets/app-secrets.yaml
+  - k8s/ingress.yaml
+  - k8s/hpa.yaml
+  - helm/evolution-todo/Chart.yaml
+  - helm/evolution-todo/values.yaml
+  - helm/evolution-todo/values-dev.yaml
+
+next_phase:
+  phase: 5
+  evolution:
+    - Deploy to cloud (AWS/GCP/Azure)
+    - Use managed Kubernetes (EKS/GKE/AKS)
+    - Use managed database (RDS/Cloud SQL)
+    - Implement auto-scaling
+    - Add monitoring (CloudWatch/Stackdriver)

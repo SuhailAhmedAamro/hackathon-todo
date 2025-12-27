@@ -1,0 +1,256 @@
+# Blueprint: Chatbot (Phase 3)
+# MCP-enabled AI chatbot for natural language task management
+
+metadata:
+  name: chatbot-todo-app
+  version: 1.0.0
+  phase: 3
+  description: AI-powered chatbot using Claude and MCP
+  tags: [mcp, claude, ai, websocket, chatbot]
+
+structure:
+  root: phase-3-chatbot
+  extends: phase-2-web
+  additions:
+    - mcp-server/
+    - frontend/src/components/chat/
+
+mcp_server:
+  framework: fastapi
+  protocol: MCP (Model Context Protocol)
+  ai_provider: anthropic
+  model: claude-3-5-sonnet-20241022
+
+  structure:
+    - src/server.py
+    - src/tools/
+    - src/models/
+    - src/utils/
+
+  files:
+    - path: src/server.py
+      template: mcp_server_main
+
+    - path: src/tools/__init__.py
+      content: |
+        from .create_task import CreateTaskTool
+        from .list_tasks import ListTasksTool
+        from .update_task import UpdateTaskTool
+        from .delete_task import DeleteTaskTool
+        from .search_tasks import SearchTasksTool
+        __all__ = ["CreateTaskTool", "ListTasksTool", "UpdateTaskTool", "DeleteTaskTool", "SearchTasksTool"]
+
+    - path: src/tools/create_task.py
+      template: mcp_create_task_tool
+      references: skills/mcp-tool-skill.md
+
+    - path: src/tools/list_tasks.py
+      template: mcp_list_tasks_tool
+
+    - path: src/tools/update_task.py
+      template: mcp_update_task_tool
+
+    - path: src/tools/delete_task.py
+      template: mcp_delete_task_tool
+
+    - path: src/tools/search_tasks.py
+      template: mcp_search_tasks_tool
+
+    - path: src/models/conversation.py
+      template: conversation_model
+      reuse_from: skills/models/conversation.py
+
+    - path: src/utils/claude_client.py
+      template: claude_api_client
+
+  tools:
+    - name: create_task
+      description: Create a new task
+      required_params: [title]
+      optional_params: [description, priority, due_date, tags]
+
+    - name: list_tasks
+      description: List tasks with optional filtering
+      required_params: []
+      optional_params: [status, priority, tags, search, limit]
+
+    - name: update_task
+      description: Update an existing task
+      required_params: [task_id]
+      optional_params: [title, description, priority, status, due_date]
+
+    - name: delete_task
+      description: Delete a task permanently
+      required_params: [task_id, confirm]
+
+    - name: search_tasks
+      description: Search tasks by keyword
+      required_params: [query]
+      optional_params: [limit]
+
+    - name: get_task_stats
+      description: Get statistics about tasks
+      required_params: []
+      optional_params: [period]
+
+  dependencies:
+    - fastapi: ^0.109
+    - anthropic: ^0.8
+    - websockets: ^12.0
+    - sqlalchemy: ^2.0
+    - pydantic: ^2.0
+
+frontend_additions:
+  components:
+    - path: src/components/chat/ChatInterface.tsx
+      template: chat_interface
+
+    - path: src/components/chat/MessageList.tsx
+      template: message_list
+
+    - path: src/components/chat/MessageInput.tsx
+      template: message_input
+
+    - path: src/components/chat/ConversationList.tsx
+      template: conversation_list
+
+  pages:
+    - path: src/app/chat/page.tsx
+      template: chat_page
+
+  hooks:
+    - path: src/hooks/useWebSocket.ts
+      template: websocket_hook
+
+    - path: src/hooks/useChat.ts
+      template: chat_hook
+
+websocket:
+  endpoint: ws://localhost:3000/ws/chat
+  protocol: WebSocket
+  events:
+    client_to_server:
+      - chat_message
+      - typing_indicator
+
+    server_to_client:
+      - message_response
+      - task_created
+      - task_updated
+      - task_deleted
+      - error
+
+database_additions:
+  tables:
+    - conversations:
+        columns:
+          - id: UUID PRIMARY KEY
+          - user_id: UUID FOREIGN KEY
+          - title: VARCHAR(255)
+          - created_at: TIMESTAMP
+          - updated_at: TIMESTAMP
+
+    - messages:
+        columns:
+          - id: UUID PRIMARY KEY
+          - conversation_id: UUID FOREIGN KEY
+          - role: VARCHAR(20)
+          - content: TEXT
+          - tool_calls: JSONB
+          - created_at: TIMESTAMP
+
+api_additions:
+  endpoints:
+    conversations:
+      - GET /api/conversations
+      - POST /api/conversations
+      - GET /api/conversations/:id
+      - DELETE /api/conversations/:id
+
+    chat:
+      - WS /ws/chat
+
+environment_variables:
+  required:
+    - ANTHROPIC_API_KEY
+    - MCP_SERVER_PORT
+    - DATABASE_URL
+
+  optional:
+    - CLAUDE_MODEL
+    - MAX_TOKENS
+    - TEMPERATURE
+
+example_conversations:
+  - user: "Create a high priority task to review code"
+    assistant: "I've created a high priority task titled 'Review code'"
+    tool_used: create_task
+
+  - user: "What tasks do I have?"
+    assistant: "You have 5 pending tasks..."
+    tool_used: list_tasks
+
+  - user: "Mark the review task as done"
+    assistant: "Marked 'Review code' as completed"
+    tool_used: update_task
+
+testing:
+  mcp_server:
+    - Test each tool individually
+    - Test tool chaining
+    - Test error handling
+    - Test Claude API integration
+
+  chat_interface:
+    - Test message sending
+    - Test message receiving
+    - Test WebSocket connection
+    - Test reconnection logic
+
+commands:
+  mcp_server:
+    dev: python src/server.py
+    test: pytest tests/
+
+  full_stack:
+    dev: docker-compose up
+    test: pytest && npm test
+
+deployment:
+  docker_compose:
+    services:
+      - postgres
+      - redis
+      - backend
+      - frontend
+      - mcp-server
+
+  ports:
+    mcp_server: 3001
+    websocket: same_as_frontend
+
+success_criteria:
+  - Natural language task creation works
+  - All MCP tools functional
+  - Conversations persist correctly
+  - Chat UI responsive and accessible
+  - WebSocket handles disconnections gracefully
+  - Tests passing
+
+reusable_components:
+  from_phase_2:
+    - Authentication
+    - Task CRUD logic
+    - Database models
+
+  extract_to_skills:
+    - MCP tool definitions
+    - Claude API client
+    - WebSocket utilities
+
+next_phase:
+  phase: 4
+  containerization:
+    - Dockerize all services
+    - Create Kubernetes manifests
+    - Implement Helm charts

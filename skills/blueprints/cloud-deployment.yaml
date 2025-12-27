@@ -1,0 +1,400 @@
+# Blueprint: Cloud Deployment (Phase 5)
+# Production deployment on AWS/GCP/Azure with IaC
+
+metadata:
+  name: cloud-todo-deployment
+  version: 1.0.0
+  phase: 5
+  description: Cloud-native deployment with Terraform
+  tags: [terraform, aws, gcp, azure, cloud, production]
+
+cloud_providers:
+  aws:
+    services:
+      kubernetes: EKS (Elastic Kubernetes Service)
+      database: RDS PostgreSQL
+      cache: ElastiCache Redis
+      storage: S3
+      cdn: CloudFront
+      dns: Route53
+      monitoring: CloudWatch
+      secrets: Secrets Manager
+      load_balancer: ALB
+
+  gcp:
+    services:
+      kubernetes: GKE (Google Kubernetes Engine)
+      database: Cloud SQL PostgreSQL
+      cache: Memorystore Redis
+      storage: Cloud Storage
+      cdn: Cloud CDN
+      dns: Cloud DNS
+      monitoring: Cloud Monitoring
+      secrets: Secret Manager
+      load_balancer: Cloud Load Balancing
+
+  azure:
+    services:
+      kubernetes: AKS (Azure Kubernetes Service)
+      database: Azure Database for PostgreSQL
+      cache: Azure Cache for Redis
+      storage: Blob Storage
+      cdn: Azure CDN
+      dns: Azure DNS
+      monitoring: Azure Monitor
+      secrets: Key Vault
+      load_balancer: Azure Load Balancer
+
+terraform_structure:
+  root: terraform/
+  modules:
+    - networking/
+    - eks/  # or gke/ or aks/
+    - rds/  # or cloud-sql/ or azure-db/
+    - s3/   # or gcs/ or blob/
+    - monitoring/
+    - secrets/
+
+  files:
+    - main.tf
+    - variables.tf
+    - outputs.tf
+    - versions.tf
+    - backend.tf
+    - environments/dev/terraform.tfvars
+    - environments/staging/terraform.tfvars
+    - environments/prod/terraform.tfvars
+
+terraform_aws_example:
+  backend:
+    s3:
+      bucket: terraform-state-evolution-todo
+      key: prod/terraform.tfstate
+      region: us-east-1
+      dynamodb_table: terraform-locks
+      encrypt: true
+
+  networking:
+    vpc:
+      cidr: 10.0.0.0/16
+      availability_zones: [us-east-1a, us-east-1b, us-east-1c]
+      public_subnets: [10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24]
+      private_subnets: [10.0.11.0/24, 10.0.12.0/24, 10.0.13.0/24]
+      enable_nat_gateway: true
+      single_nat_gateway: false
+
+  eks:
+    cluster_name: evolution-todo-cluster
+    cluster_version: "1.28"
+    node_groups:
+      general:
+        instance_types: [t3.medium]
+        desired_size: 3
+        min_size: 2
+        max_size: 10
+        disk_size: 50
+
+  rds:
+    engine: postgres
+    engine_version: "15.4"
+    instance_class: db.t3.micro
+    allocated_storage: 20
+    max_allocated_storage: 100
+    multi_az: true
+    backup_retention_period: 7
+    storage_encrypted: true
+
+  elasticache:
+    engine: redis
+    engine_version: "7.0"
+    node_type: cache.t3.micro
+    num_cache_nodes: 2
+
+  s3:
+    bucket_name: evolution-todo-assets
+    versioning: true
+    encryption: AES256
+    public_access_block: true
+
+  cloudfront:
+    enabled: true
+    price_class: PriceClass_100
+    min_ttl: 0
+    default_ttl: 3600
+    max_ttl: 86400
+
+infrastructure_deployment:
+  steps:
+    1_setup_terraform_backend:
+      - Create S3 bucket for state
+      - Create DynamoDB table for locks
+      - Configure backend.tf
+
+    2_initialize_terraform:
+      - terraform init
+      - terraform workspace select prod
+
+    3_plan_infrastructure:
+      - terraform plan -var-file=environments/prod/terraform.tfvars
+
+    4_apply_infrastructure:
+      - terraform apply -var-file=environments/prod/terraform.tfvars
+
+    5_configure_kubectl:
+      - aws eks update-kubeconfig --name evolution-todo-cluster --region us-east-1
+
+    6_deploy_application:
+      - helm upgrade --install evolution-todo ./helm/evolution-todo -f values-prod.yaml
+
+cicd_pipeline:
+  platform: GitHub Actions
+  workflow_file: .github/workflows/deploy.yml
+
+  triggers:
+    - push to main branch
+    - pull request to main
+
+  stages:
+    1_test:
+      - Run unit tests
+      - Run integration tests
+      - Check code coverage
+
+    2_build:
+      - Build Docker images
+      - Tag with git commit SHA
+      - Push to ECR/GCR/ACR
+
+    3_deploy:
+      - Update kubeconfig
+      - Deploy with Helm
+      - Run smoke tests
+
+    4_verify:
+      - Health check endpoints
+      - Verify pods running
+      - Check metrics
+
+  example_workflow:
+    name: Deploy to Production
+    on:
+      push:
+        branches: [main]
+
+    jobs:
+      test:
+        runs-on: ubuntu-latest
+        steps:
+          - Checkout code
+          - Run tests
+          - Upload coverage
+
+      build:
+        needs: test
+        steps:
+          - Build images
+          - Push to registry
+
+      deploy:
+        needs: build
+        steps:
+          - Configure kubectl
+          - Deploy with Helm
+          - Run smoke tests
+
+monitoring:
+  metrics:
+    prometheus:
+      enabled: true
+      retention: 30d
+
+    grafana:
+      enabled: true
+      dashboards:
+        - Application metrics
+        - Infrastructure metrics
+        - Database metrics
+
+  logging:
+    centralized: true
+    tool: CloudWatch / Stackdriver / Azure Monitor
+    retention: 90d
+
+  alerting:
+    channels: [email, slack, pagerduty]
+    rules:
+      - Error rate > 5%
+      - Response time p95 > 1s
+      - Pod crashes
+      - Database connections > 80%
+      - Disk usage > 85%
+
+autoscaling:
+  kubernetes_hpa:
+    enabled: true
+    metrics: [cpu, memory]
+    targets:
+      cpu: 70%
+      memory: 80%
+
+  cluster_autoscaler:
+    enabled: true
+    min_nodes: 2
+    max_nodes: 20
+
+  database:
+    type: vertical
+    enabled: true
+    max_instance_class: db.r5.xlarge
+
+security:
+  network:
+    vpc_isolation: true
+    private_subnets: true
+    security_groups:
+      - Allow HTTPS (443) from internet
+      - Allow HTTP (80) from internet
+      - Allow SSH (22) from bastion only
+      - Database access from app subnets only
+
+  secrets:
+    manager: AWS Secrets Manager / GCP Secret Manager / Azure Key Vault
+    rotation: enabled
+    encryption: at rest and in transit
+
+  ssl_certificates:
+    provider: ACM / Google-managed / Azure-managed
+    auto_renewal: true
+
+  compliance:
+    - HTTPS only
+    - Encryption at rest
+    - Encryption in transit
+    - Regular security scans
+    - Audit logging
+
+disaster_recovery:
+  backup_strategy:
+    database:
+      frequency: daily
+      retention: 30 days
+      cross_region: true
+
+    application:
+      git_versioning: true
+      docker_images: versioned and stored
+
+  recovery_procedures:
+    rto: 1 hour (Recovery Time Objective)
+    rpo: 1 hour (Recovery Point Objective)
+
+    steps:
+      - Restore database from backup
+      - Deploy previous working version
+      - Verify functionality
+      - Update DNS if needed
+
+cost_optimization:
+  strategies:
+    - Use Spot Instances for non-critical workloads
+    - Right-size instances based on metrics
+    - Use S3 lifecycle policies
+    - Enable database auto-scaling
+    - Use CDN to reduce origin load
+    - Implement auto-shutdown for dev/staging
+
+  budgets:
+    monthly_limit: $200
+    alerts:
+      - 50% of budget
+      - 80% of budget
+      - 100% of budget
+
+  cost_monitoring:
+    tool: AWS Cost Explorer / GCP Cost Management / Azure Cost Management
+    frequency: daily
+    reports: monthly
+
+deployment_checklist:
+  pre_deployment:
+    - [ ] Terraform backend configured
+    - [ ] All secrets stored in secret manager
+    - [ ] DNS records ready
+    - [ ] SSL certificates provisioned
+    - [ ] Monitoring configured
+    - [ ] Alerts set up
+    - [ ] Backup strategy tested
+
+  deployment:
+    - [ ] Infrastructure provisioned
+    - [ ] Database migrated
+    - [ ] Application deployed
+    - [ ] Health checks passing
+    - [ ] Smoke tests passing
+
+  post_deployment:
+    - [ ] Monitor metrics
+    - [ ] Check logs for errors
+    - [ ] Verify auto-scaling
+    - [ ] Test disaster recovery
+    - [ ] Document runbooks
+
+success_criteria:
+  - Infrastructure deployed via Terraform
+  - Application running on managed Kubernetes
+  - Database on managed service with replication
+  - CI/CD pipeline functional
+  - Auto-scaling working
+  - Monitoring dashboards live
+  - Alerts configured and tested
+  - Cost within budget
+  - RTO/RPO met in DR test
+  - Zero-downtime deployments
+
+maintenance:
+  regular_tasks:
+    daily:
+      - Check monitoring dashboards
+      - Review error logs
+      - Check cost anomalies
+
+    weekly:
+      - Review security alerts
+      - Check backup success
+      - Review performance metrics
+
+    monthly:
+      - Update dependencies
+      - Review and optimize costs
+      - Test disaster recovery
+      - Security audit
+
+  upgrade_strategy:
+    kubernetes:
+      frequency: quarterly
+      process: blue-green deployment
+
+    database:
+      frequency: semi-annually
+      process: in-place with snapshot
+
+reusable_components:
+  terraform_modules:
+    - VPC module (reusable across projects)
+    - EKS module
+    - RDS module
+    - Monitoring module
+
+  helm_charts:
+    - Application chart (versioned)
+    - Database chart
+    - Monitoring stack
+
+documentation:
+  required:
+    - Architecture diagram
+    - Deployment runbook
+    - Disaster recovery plan
+    - Cost optimization guide
+    - Troubleshooting guide
+    - On-call procedures
