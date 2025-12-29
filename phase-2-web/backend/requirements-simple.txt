@@ -1,0 +1,6 @@
+# Minimal requirements for in-memory demo backend
+# Install with: pip install -r requirements-simple.txt
+
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0

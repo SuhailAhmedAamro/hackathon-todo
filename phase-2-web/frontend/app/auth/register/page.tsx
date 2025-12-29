@@ -1,0 +1,318 @@
+"use client";
+
+/**
+ * Registration Page
+ * New user registration with validation
+ */
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth";
+import ThemeToggle from "@/components/ThemeToggle";
+import { ButtonLoading } from "@/components/ui/Loading";
+import Footer from "@/components/Footer";
+
+// ============================================================================
+// VALIDATION SCHEMA
+// ============================================================================
+
+const registerSchema = z
+  .object({
+    username: z
+      .string()
+      .min(3, "Username must be at least 3 characters")
+      .max(50, "Username must be less than 50 characters")
+      .regex(
+        /^[a-zA-Z0-9_]+$/,
+        "Username can only contain letters, numbers, and underscores"
+      ),
+    email: z.string().email("Invalid email address"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+type RegisterFormData = z.infer<typeof registerSchema>;
+
+// ============================================================================
+// PASSWORD STRENGTH INDICATOR
+// ============================================================================
+
+function PasswordStrength({ password }: { password: string }) {
+  const getStrength = () => {
+    if (password.length === 0) return { strength: 0, label: "", color: "" };
+    if (password.length < 8) return { strength: 1, label: "Weak", color: "bg-red-500" };
+
+    let strength = 1;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+    if (strength === 2) return { strength: 2, label: "Fair", color: "bg-yellow-500" };
+    if (strength === 3) return { strength: 3, label: "Good", color: "bg-blue-500" };
+    if (strength >= 4) return { strength: 4, label: "Strong", color: "bg-green-500" };
+
+    return { strength: 1, label: "Weak", color: "bg-red-500" };
+  };
+
+  const { strength, label, color } = getStrength();
+
+  if (password.length === 0) return null;
+
+  return (
+    <div className="mt-2">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs text-gray-600 dark:text-gray-400">Password Strength:</span>
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{label}</span>
+      </div>
+      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+        <div
+          className={`h-1.5 rounded-full transition-all duration-300 ${color}`}
+          style={{ width: `${(strength / 4) * 100}%` }}
+        ></div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// REGISTER PAGE COMPONENT
+// ============================================================================
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const { user, register: registerUser, error: authError, clearError, loading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [password, setPassword] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+  });
+
+  // Watch password for strength indicator
+  const watchedPassword = watch("password", "");
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard");
+    }
+  }, [loading, user, router]);
+
+  const onSubmit = async (data: RegisterFormData) => {
+    setIsLoading(true);
+    clearError();
+
+    try {
+      await registerUser({
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      });
+      router.push("/dashboard");
+    } catch (error) {
+      // Error is handled by auth context
+      console.error("Registration failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8 relative">
+      {/* Theme Toggle - Fixed Position */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
+      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-2xl animate-scaleIn">
+        {/* Header */}
+        <div className="text-center">
+          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
+            Create Account
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300">Join us and start managing your tasks</p>
+        </div>
+
+        {/* Error Message */}
+        {authError && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md animate-fadeIn">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-red-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{authError}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Registration Form */}
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <div className="space-y-4">
+            {/* Username */}
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+              >
+                Username
+              </label>
+              <input
+                {...register("username")}
+                id="username"
+                type="text"
+                autoComplete="username"
+                className={`appearance-none relative block w-full px-4 py-3 border ${
+                  errors.username ? "border-red-300 dark:border-red-600" : "border-gray-300 dark:border-gray-600"
+                } placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                placeholder="Choose a username"
+              />
+              {errors.username && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.username.message}
+                </p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+              >
+                Email Address
+              </label>
+              <input
+                {...register("email")}
+                id="email"
+                type="email"
+                autoComplete="email"
+                className={`appearance-none relative block w-full px-4 py-3 border ${
+                  errors.email ? "border-red-300 dark:border-red-600" : "border-gray-300 dark:border-gray-600"
+                } placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                placeholder="Enter your email"
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+              >
+                Password
+              </label>
+              <input
+                {...register("password")}
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                className={`appearance-none relative block w-full px-4 py-3 border ${
+                  errors.password ? "border-red-300 dark:border-red-600" : "border-gray-300 dark:border-gray-600"
+                } placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                placeholder="Create a password"
+              />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.password.message}
+                </p>
+              )}
+              <PasswordStrength password={watchedPassword} />
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+              >
+                Confirm Password
+              </label>
+              <input
+                {...register("confirmPassword")}
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                className={`appearance-none relative block w-full px-4 py-3 border ${
+                  errors.confirmPassword
+                    ? "border-red-300 dark:border-red-600"
+                    : "border-gray-300 dark:border-gray-600"
+                } placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200`}
+                placeholder="Confirm your password"
+              />
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
+            >
+              {isLoading ? <ButtonLoading message="Creating account..." /> : "Create Account"}
+            </button>
+          </div>
+
+          {/* Login Link */}
+          <div className="text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Already have an account?{" "}
+              <Link
+                href="/auth/login"
+                className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors"
+              >
+                Sign in instead
+              </Link>
+            </p>
+          </div>
+        </form>
+      </div>
+      </div>
+
+      {/* Footer */}
+      <Footer />
+    </div>
+  );
+}
