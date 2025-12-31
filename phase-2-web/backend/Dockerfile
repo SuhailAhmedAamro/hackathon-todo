@@ -1,7 +1,5 @@
-# Multi-stage build for Python FastAPI backend
-
-# Stage 1: Builder
-FROM python:3.11-slim as builder
+# Use Python 3.11 slim image
+FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
@@ -12,40 +10,22 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy requirements first for better caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Stage 2: Production
-FROM python:3.11-slim
-
-# Set working directory
-WORKDIR /app
-
-# Install system dependencies (runtime only)
-RUN apt-get update && apt-get install -y \
-    postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy Python dependencies from builder
-COPY --from=builder /root/.local /root/.local
-
-# Make sure scripts in .local are usable
-ENV PATH=/root/.local/bin:$PATH
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
-
-# Expose port
+# Expose port (Railway will override with $PORT)
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8000/health')" || true
 
-# Run migrations and start server
-CMD ["sh", "-c", "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000"]
+# Start command (Railway will use $PORT environment variable)
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}

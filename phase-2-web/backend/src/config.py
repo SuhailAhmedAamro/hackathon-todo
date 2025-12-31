@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     APP_NAME: str = "Todo App - Phase 2"
     DEBUG: bool = True
 
+    # OAuth Settings
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GITHUB_CLIENT_ID: str = ""
+    GITHUB_CLIENT_SECRET: str = ""
+    OAUTH_REDIRECT_URI: str = "http://localhost:3000/auth/callback"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

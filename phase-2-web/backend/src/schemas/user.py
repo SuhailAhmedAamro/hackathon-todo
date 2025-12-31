@@ -135,3 +135,39 @@ class TokenData(BaseModel):
     class Config:
         """Pydantic configuration."""
         from_attributes = True
+
+
+class ChangePassword(BaseModel):
+    """
+    Schema for password change request.
+    User must provide current password for verification.
+    """
+    current_password: str = Field(
+        description="Current password for verification",
+        examples=["OldPass123"]
+    )
+    new_password: str = Field(
+        min_length=8,
+        description="New password (min 8 chars, upper, lower, number)",
+        examples=["NewSecurePass456"]
+    )
+    confirm_password: str = Field(
+        description="Confirm new password",
+        examples=["NewSecurePass456"]
+    )
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        """Validate new password strength."""
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one number")
+        return v
+
+    def validate_passwords_match(self) -> bool:
+        """Validate that new password and confirm password match."""
+        return self.new_password == self.confirm_password

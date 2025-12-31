@@ -18,6 +18,7 @@ Setup:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 
 from src.config import settings
@@ -88,9 +89,17 @@ app = FastAPI(
 )
 
 # ============================================================================
-# CORS MIDDLEWARE
+# MIDDLEWARE
 # ============================================================================
 
+# Session middleware (required for OAuth)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    max_age=3600  # 1 hour session timeout
+)
+
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,

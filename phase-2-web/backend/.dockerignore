@@ -7,32 +7,37 @@ __pycache__/
 env/
 venv/
 ENV/
-.venv
+*.egg-info/
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-*.cover
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Environment
-.env
-.env.local
+# Git
+.git/
+.gitignore
 
-# Database
-*.db
-*.sqlite3
+# Docs
+*.md
+!README.md
+
+# Alembic
+alembic/versions/*.pyc
+
+# Tests
+.pytest_cache/
+tests/
 
 # Logs
 *.log
