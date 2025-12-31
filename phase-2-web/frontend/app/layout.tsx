@@ -5,8 +5,8 @@ import { ThemeProvider } from "@/lib/theme";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: "Hackathon II - Phase 2: Todo App",
-  description: "Todo Web Application - Spec-driven development demo",
+  title: "Todo App",
+  description: "Modern task management application",
 };
 
 export default function RootLayout({

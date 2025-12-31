@@ -53,11 +53,8 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
       {/* Logo/Brand */}
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-          📝 Todo App
+          Todo App
         </h1>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Hackathon II - Phase 2
-        </p>
       </div>
 
       {/* User Profile */}
@@ -112,16 +109,6 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
           );
         })}
       </nav>
-
-      {/* Theme Toggle */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Theme
-          </span>
-          <ThemeToggle />
-        </div>
-      </div>
 
       {/* Logout Button */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">

@@ -2,7 +2,7 @@
 
 /**
  * Tasks Page
- * Main page for managing tasks
+ * Premium task management with modern UI
  */
 
 import { useState, useEffect } from "react";
@@ -14,8 +14,12 @@ import TaskList from "@/components/tasks/TaskList";
 import TaskForm from "@/components/tasks/TaskForm";
 import { FullPageLoading } from "@/components/ui/Loading";
 import { showSuccess, showError } from "@/lib/toast";
+import { celebrateTaskCompletion } from "@/lib/confetti";
 import Footer from "@/components/Footer";
-import Sidebar from "@/components/Sidebar";
+import CompleteNavbar from "@/components/CompleteNavbar";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 
 export default function TasksPage() {
   const { user, logout, loading: authLoading } = useAuth();
@@ -115,11 +119,14 @@ export default function TasksPage() {
     try {
       const updatedTask = await api.completeTask(taskId);
       setTasks(tasks.map((t) => (t.id === taskId ? updatedTask : t)));
-      showSuccess(
-        updatedTask.status === "completed"
-          ? "Task marked as complete!"
-          : "Task marked as incomplete"
-      );
+
+      if (updatedTask.status === "completed") {
+        // Celebrate task completion with confetti and sound!
+        celebrateTaskCompletion();
+        showSuccess("🎉 Task completed! Great job!");
+      } else {
+        showSuccess("Task marked as incomplete");
+      }
     } catch (error) {
       console.error("Failed to toggle task:", error);
       showError("Failed to update task");
@@ -163,55 +170,82 @@ export default function TasksPage() {
     return null; // Will redirect
   }
 
+  // Calculate stats
+  const completedTasks = tasks.filter((t) => t.status === "completed").length;
+  const inProgressTasks = tasks.filter((t) => t.status === "in_progress").length;
+  const pendingTasks = tasks.length - completedTasks - inProgressTasks;
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      {/* Sidebar */}
-      <Sidebar user={user} onLogout={handleLogout} />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* Complete Navbar */}
+      <CompleteNavbar user={user} onLogout={handleLogout} />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-8 overflow-y-auto">
-          {/* Page Header */}
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Page Header with Stats */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              My Tasks
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              {tasks.length} {tasks.length === 1 ? "task" : "tasks"} total
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  My Tasks
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Manage and organize your tasks efficiently
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => setShowForm(true)}
+                leftIcon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                }
+              >
+                New Task
+              </Button>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card variant="default" className="text-center">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{tasks.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Total Tasks</p>
+              </Card>
+              <Card variant="default" className="text-center">
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{completedTasks}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Completed</p>
+              </Card>
+              <Card variant="default" className="text-center">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{inProgressTasks}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">In Progress</p>
+              </Card>
+              <Card variant="default" className="text-center">
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{pendingTasks}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Pending</p>
+              </Card>
+            </div>
           </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Task Form - Left Side */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 sticky top-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {showForm ? "New Task" : "Create Task"}
-                </h2>
-                {!showForm && (
+
+          {/* Task Form Modal */}
+          {showForm && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+              <Card variant="elevated" className="max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scaleIn">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Create New Task
+                  </h2>
                   <button
-                    onClick={() => setShowForm(true)}
-                    className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                    title="Show form"
+                    onClick={() => setShowForm(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                   >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
+                    <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                )}
-              </div>
-
-              {showForm ? (
+                </div>
                 <TaskForm
                   onSubmit={handleCreateTask}
                   onCancel={() => setShowForm(false)}
@@ -219,31 +253,12 @@ export default function TasksPage() {
                   submitLabel="Create Task"
                   isLoading={creating}
                 />
-              ) : (
-                <div className="text-center py-8">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    Click the + button to create a new task
-                  </p>
-                </div>
-              )}
+              </Card>
             </div>
-          </div>
+          )}
 
-          {/* Task List - Right Side */}
-          <div className="lg:col-span-2">
+          {/* Task List */}
+          <div className="mt-8">
             <TaskList
               tasks={tasks}
               taskTags={taskTags}
@@ -253,12 +268,11 @@ export default function TasksPage() {
               onRemoveTag={handleRemoveTag}
             />
           </div>
-          </div>
-        </main>
+        </div>
+      </main>
 
-        {/* Footer */}
-        <Footer />
-      </div>
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
