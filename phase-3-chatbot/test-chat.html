@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 3 - MCP Chat Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: #667eea;
+            color: white;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .typing {
+            align-self: flex-start;
+            background: #f3f4f6;
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .typing.active {
+            display: block;
+        }
+
+        .typing span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #9ca3af;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite;
+        }
+
+        .typing span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .input-area {
+            padding: 20px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #f3f4f6;
+            transform: translateY(-1px);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .welcome {
+            text-align: center;
+            color: #6b7280;
+            padding: 40px 20px;
+        }
+
+        .welcome h2 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .welcome ul {
+            text-align: left;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .welcome li {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="status"></div>
+            <div>
+                <h2>🤖 AI Task Assistant</h2>
+                <p style="font-size: 12px; opacity: 0.9;">Powered by Claude AI + MCP</p>
+            </div>
+        </div>
+
+        <div class="messages" id="messages">
+            <div class="welcome">
+                <h2>👋 Welcome to Phase 3!</h2>
+                <p>I can help you manage your tasks using natural language.</p>
+                <ul>
+                    <li>💬 "Create a high priority task to review code"</li>
+                    <li>📋 "Show me all my pending tasks"</li>
+                    <li>✏️ "Mark the documentation task as complete"</li>
+                    <li>🔍 "Search for tasks about testing"</li>
+                </ul>
+            </div>
+            <div class="typing" id="typing">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="quick-actions">
+                <button class="quick-btn" onclick="sendQuick('Show me all my tasks')">📋 List tasks</button>
+                <button class="quick-btn" onclick="sendQuick('Create a new task')">➕ New task</button>
+                <button class="quick-btn" onclick="sendQuick('What are my high priority tasks?')">⚡ High priority</button>
+            </div>
+            <div class="input-wrapper">
+                <input
+                    type="text"
+                    id="messageInput"
+                    placeholder="Type your message... (Enter to send)"
+                    onkeypress="handleKeyPress(event)"
+                />
+                <button onclick="sendMessage()" id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        const messages = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typing = document.getElementById('typing');
+
+        // Connect to WebSocket
+        function connect() {
+            ws = new WebSocket('ws://localhost:8001/ws/chat');
+
+            ws.onopen = () => {
+                console.log('✅ Connected to MCP server');
+                updateStatus(true);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('Received:', data);
+
+                if (data.type === 'message') {
+                    hideTyping();
+                    addMessage(data.content, 'assistant');
+                } else if (data.type === 'typing') {
+                    if (data.is_typing) {
+                        showTyping();
+                    } else {
+                        hideTyping();
+                    }
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus(false);
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from server');
+                updateStatus(false);
+                // Try to reconnect after 3 seconds
+                setTimeout(connect, 3000);
+            };
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+            // Add user message to UI
+            addMessage(message, 'user');
+
+            // Send to server
+            ws.send(JSON.stringify({
+                type: 'chat',
+                message: message,
+                conversation_id: 'demo'
+            }));
+
+            // Clear input
+            messageInput.value = '';
+        }
+
+        function sendQuick(message) {
+            messageInput.value = message;
+            sendMessage();
+        }
+
+        function addMessage(content, role) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            msgDiv.textContent = content;
+            messages.insertBefore(msgDiv, typing);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function showTyping() {
+            typing.classList.add('active');
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function hideTyping() {
+            typing.classList.remove('active');
+        }
+
+        function updateStatus(connected) {
+            const status = document.querySelector('.status');
+            status.style.background = connected ? '#4ade80' : '#ef4444';
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Connect on load
+        connect();
+    </script>
+</body>
+</html>

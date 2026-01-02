@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 3 - AI Chatbot with ALL BONUS FEATURES 🏆</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Nastaliq Urdu', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            height: 700px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .lang-toggle {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .lang-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .bonus-badge {
+            background: #fbbf24;
+            color: #78350f;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .features-banner {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 8px 20px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: #667eea;
+            color: white;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .message.urdu {
+            font-family: 'Noto Nastaliq Urdu', serif;
+            font-size: 16px;
+            direction: rtl;
+            text-align: right;
+        }
+
+        .lang-indicator {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
+        .typing {
+            align-self: flex-start;
+            background: #f3f4f6;
+            padding: 12px 16px;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .typing.active {
+            display: block;
+        }
+
+        .typing span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #9ca3af;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite;
+        }
+
+        .typing span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .input-area {
+            padding: 20px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 20px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #f3f4f6;
+            transform: translateY(-1px);
+        }
+
+        .quick-btn.urdu {
+            font-family: 'Noto Nastaliq Urdu', serif;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .voice-btn {
+            background: #10b981;
+            padding: 12px;
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice-btn:hover {
+            background: #059669;
+        }
+
+        .voice-btn.listening {
+            background: #ef4444;
+            animation: pulse-red 1s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .welcome {
+            text-align: center;
+            color: #6b7280;
+            padding: 40px 20px;
+        }
+
+        .welcome h2 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .welcome .features {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 2px solid #667eea40;
+        }
+
+        .feature-card h3 {
+            font-size: 14px;
+            color: #667eea;
+            margin-bottom: 4px;
+        }
+
+        .feature-card p {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .voice-status {
+            font-size: 11px;
+            color: #059669;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .voice-status.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="status"></div>
+                <div>
+                    <h2 id="title">🤖 AI Task Assistant</h2>
+                    <p style="font-size: 12px; opacity: 0.9;">Powered by Claude AI + MCP</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <span class="bonus-badge">+700 BONUS PTS 🏆</span>
+                <button class="lang-toggle" onclick="toggleLanguage()">
+                    <span id="langBtn">🇵🇰 اردو / English</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="features-banner">
+            ✅ Voice Commands | ✅ Urdu Support | ✅ Natural Language | ✅ MCP Tools
+        </div>
+
+        <div class="messages" id="messages">
+            <div class="welcome">
+                <h2 id="welcomeTitle">👋 Welcome to Phase 3 with ALL BONUSES!</h2>
+                <p id="welcomeText">Manage tasks with voice, Urdu, or English!</p>
+                <div class="features">
+                    <div class="feature-card">
+                        <h3>🎤 Voice (+200pts)</h3>
+                        <p>Speak your commands</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>🇵🇰 Urdu (+100pts)</h3>
+                        <p>اردو میں بات کریں</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>🤖 AI Tools</h3>
+                        <p>Natural language</p>
+                    </div>
+                </div>
+            </div>
+            <div class="typing" id="typing">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="quick-actions" id="quickActions">
+                <button class="quick-btn" onclick="sendQuick('Create a task to test Phase 3')">➕ New task</button>
+                <button class="quick-btn" onclick="sendQuick('Show all my tasks')">📋 List</button>
+                <button class="quick-btn urdu" onclick="sendQuick('نیا ٹاسک بنائیں')">🇵🇰 اردو</button>
+            </div>
+            <div class="input-wrapper">
+                <input
+                    type="text"
+                    id="messageInput"
+                    placeholder="Type or speak your command..."
+                    onkeypress="handleKeyPress(event)"
+                />
+                <button class="voice-btn" onclick="toggleVoice()" id="voiceBtn" title="Voice input (Click to speak)">
+                    🎤
+                </button>
+                <button onclick="sendMessage()" id="sendBtn">Send</button>
+            </div>
+            <div class="voice-status" id="voiceStatus">🎤 Listening...</div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let currentLang = 'en';
+        let isListening = false;
+        let recognition = null;
+
+        const messages = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typing = document.getElementById('typing');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const voiceStatus = document.getElementById('voiceStatus');
+
+        // Initialize Speech Recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = currentLang === 'ur' ? 'ur-PK' : 'en-US';
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                messageInput.value = transcript;
+                stopVoice();
+                sendMessage();
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                stopVoice();
+            };
+
+            recognition.onend = () => {
+                stopVoice();
+            };
+        }
+
+        // Connect to WebSocket
+        function connect() {
+            ws = new WebSocket('ws://localhost:8001/ws/chat');
+
+            ws.onopen = () => {
+                console.log('✅ Connected to MCP server');
+                updateStatus(true);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('Received:', data);
+
+                if (data.type === 'message') {
+                    hideTyping();
+                    addMessage(data.content, 'assistant');
+
+                    // Text-to-speech for voice responses
+                    if (isListening && 'speechSynthesis' in window) {
+                        speak(data.content);
+                    }
+                } else if (data.type === 'typing') {
+                    if (data.is_typing) {
+                        showTyping();
+                    } else {
+                        hideTyping();
+                    }
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateStatus(false);
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from server');
+                updateStatus(false);
+                setTimeout(connect, 3000);
+            };
+        }
+
+        function toggleVoice() {
+            if (!recognition) {
+                alert('Voice recognition not supported in this browser. Please use Chrome or Edge.');
+                return;
+            }
+
+            if (isListening) {
+                stopVoice();
+            } else {
+                startVoice();
+            }
+        }
+
+        function startVoice() {
+            isListening = true;
+            voiceBtn.classList.add('listening');
+            voiceBtn.textContent = '⏹️';
+            voiceStatus.classList.add('active');
+            recognition.lang = currentLang === 'ur' ? 'ur-PK' : 'en-US';
+            recognition.start();
+        }
+
+        function stopVoice() {
+            isListening = false;
+            voiceBtn.classList.remove('listening');
+            voiceBtn.textContent = '🎤';
+            voiceStatus.classList.remove('active');
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = currentLang === 'ur' ? 'ur-PK' : 'en-US';
+                utterance.rate = 0.9;
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ur' : 'en';
+
+            if (currentLang === 'ur') {
+                document.getElementById('title').textContent = '🤖 اے آئی ٹاسک اسسٹنٹ';
+                document.getElementById('welcomeTitle').textContent = '👋 خوش آمدید!';
+                document.getElementById('welcomeText').textContent = 'آواز، اردو یا انگریزی میں ٹاسک منیج کریں!';
+                messageInput.placeholder = 'اپنا حکم ٹائپ کریں یا بولیں...';
+            } else {
+                document.getElementById('title').textContent = '🤖 AI Task Assistant';
+                document.getElementById('welcomeTitle').textContent = '👋 Welcome to Phase 3 with ALL BONUSES!';
+                document.getElementById('welcomeText').textContent = 'Manage tasks with voice, Urdu, or English!';
+                messageInput.placeholder = 'Type or speak your command...';
+            }
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+            addMessage(message, 'user');
+
+            ws.send(JSON.stringify({
+                type: 'chat',
+                message: message,
+                conversation_id: 'demo',
+                language: currentLang
+            }));
+
+            messageInput.value = '';
+        }
+
+        function sendQuick(message) {
+            messageInput.value = message;
+            sendMessage();
+        }
+
+        function addMessage(content, role) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+
+            // Detect if content has Urdu script
+            if (/[\u0600-\u06FF]/.test(content)) {
+                msgDiv.classList.add('urdu');
+            }
+
+            msgDiv.textContent = content;
+            messages.insertBefore(msgDiv, typing);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function showTyping() {
+            typing.classList.add('active');
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function hideTyping() {
+            typing.classList.remove('active');
+        }
+
+        function updateStatus(connected) {
+            const status = document.querySelector('.status');
+            status.style.background = connected ? '#4ade80' : '#ef4444';
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Connect on load
+        connect();
+
+        // Show voice support status
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            voiceBtn.disabled = true;
+            voiceBtn.title = 'Voice not supported in this browser';
+        }
+    </script>
+</body>
+</html>
