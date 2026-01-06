@@ -3,6 +3,12 @@ MCP Server Entry Point
 Handles WebSocket connections and routes tool calls to appropriate handlers
 """
 
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict, Any, List
@@ -20,7 +26,7 @@ from tools.list_tasks import list_tasks_handler
 from tools.update_task import update_task_handler
 from tools.delete_task import delete_task_handler
 from tools.search_tasks import search_tasks_handler
-from utils.claude_client import ClaudeClient
+from utils.mock_ai_client import MockAIClient  # Using mock AI due to API credit issues
 
 app = FastAPI(
     title="MCP Task Management Server",
@@ -196,23 +202,60 @@ async def process_chat_message(
     Process chat message with Claude AI
     Returns assistant response with potential tool calls
     """
-    # TODO: Implement Claude AI integration
-    # For now, return a placeholder response
+    try:
+        # Initialize Mock AI client (fallback due to API credit issues)
+        ai_client = MockAIClient()
 
-    # Placeholder: Simple keyword detection
-    if "create" in user_message.lower() and "task" in user_message.lower():
+        # Prepare messages for AI
+        messages = [
+            {
+                "role": "user",
+                "content": user_message
+            }
+        ]
+
+        # Get system prompt and tools
+        system_prompt = ai_client.get_system_prompt()
+        tools = ai_client.get_tool_definitions()
+
+        # Call Mock AI
+        logger.info(f"Calling Mock AI for user: {user_id}")
+        response = await ai_client.chat(
+            messages=messages,
+            system_prompt=system_prompt,
+            tools=tools,
+            max_tokens=2048
+        )
+
+        # Process tool calls if any
+        executed_tools = []
+        if response.get("tool_calls"):
+            logger.info(f"Mock AI requested {len(response['tool_calls'])} tool calls")
+
+            for tool_call in response["tool_calls"]:
+                tool_name = tool_call["name"]
+                tool_input = tool_call["input"]
+
+                logger.info(f"Executing tool: {tool_name} with input: {tool_input}")
+
+                # Execute the tool
+                tool_result = await execute_tool(tool_name, tool_input, user_id)
+                executed_tools.append({
+                    "tool": tool_name,
+                    "input": tool_input,
+                    "result": tool_result
+                })
+
         return {
-            "content": "I'll help you create a task. What would you like to call it?",
-            "tool_calls": []
+            "content": response.get("content", "I'm here to help with your tasks!"),
+            "tool_calls": executed_tools,
+            "stop_reason": response.get("stop_reason")
         }
-    elif "list" in user_message.lower() or "show" in user_message.lower():
+
+    except Exception as e:
+        logger.error(f"Error processing chat message: {e}")
         return {
-            "content": "Let me fetch your tasks...",
-            "tool_calls": [{"tool": "list_tasks", "parameters": {}}]
-        }
-    else:
-        return {
-            "content": f"I received your message: '{user_message}'. I'm ready to help with task management!",
+            "content": f"I encountered an error: {str(e)}. Please try again.",
             "tool_calls": []
         }
 

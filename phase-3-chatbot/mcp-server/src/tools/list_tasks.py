@@ -8,6 +8,7 @@ import httpx
 import os
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_AUTH_TOKEN = os.getenv("BACKEND_AUTH_TOKEN", "")
 
 
 async def list_tasks_handler(parameters: Dict[str, Any], user_id: str) -> Dict[str, Any]:
@@ -46,7 +47,7 @@ async def list_tasks_handler(parameters: Dict[str, Any], user_id: str) -> Dict[s
                 f"{BACKEND_URL}/api/tasks",
                 params=params,
                 headers={
-                    # TODO: Add authentication token
+                    "Authorization": f"Bearer {BACKEND_AUTH_TOKEN}",
                     "Content-Type": "application/json"
                 },
                 timeout=10.0

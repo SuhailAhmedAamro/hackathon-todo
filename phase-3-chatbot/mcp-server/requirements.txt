@@ -8,8 +8,9 @@ websockets>=12.0
 # HTTP Client
 httpx>=0.26.0
 
-# AI / Claude API
+# AI APIs
 anthropic>=0.18.0
+openai>=1.10.0
 
 # Data Validation
 pydantic>=2.5.0

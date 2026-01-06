@@ -10,6 +10,7 @@ from datetime import datetime
 
 # Phase 2 backend URL
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_AUTH_TOKEN = os.getenv("BACKEND_AUTH_TOKEN", "")
 
 
 async def create_task_handler(parameters: Dict[str, Any], user_id: str) -> Dict[str, Any]:
@@ -56,7 +57,7 @@ async def create_task_handler(parameters: Dict[str, Any], user_id: str) -> Dict[
                 f"{BACKEND_URL}/api/tasks",
                 json=task_data,
                 headers={
-                    # TODO: Add authentication token
+                    "Authorization": f"Bearer {BACKEND_AUTH_TOKEN}",
                     "Content-Type": "application/json"
                 },
                 timeout=10.0
