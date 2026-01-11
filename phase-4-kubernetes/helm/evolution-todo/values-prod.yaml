@@ -1,0 +1,93 @@
+# Production values override for evolution-todo
+
+global:
+  namespace: evolution-todo-prod
+  environment: production
+
+# Production frontend settings
+frontend:
+  replicaCount: 5
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "400m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+
+# Production backend settings
+backend:
+  replicaCount: 5
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "400m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+
+# Production MCP settings
+mcp:
+  replicaCount: 3
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "400m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+
+# Production PostgreSQL settings
+postgresql:
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  persistence:
+    size: 50Gi
+
+# Production ingress settings
+ingress:
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "200"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: todo.yourdomain.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /mcp
+          pathType: Prefix
+          service: mcp
+        - path: /ws
+          pathType: Prefix
+          service: mcp
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls:
+    - secretName: evolution-todo-tls
+      hosts:
+        - todo.yourdomain.com
+
+# Production config
+config:
+  logLevel: "WARNING"
+  corsOrigins: "https://todo.yourdomain.com"

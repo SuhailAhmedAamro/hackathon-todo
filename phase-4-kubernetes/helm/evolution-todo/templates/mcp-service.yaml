@@ -1,0 +1,18 @@
+{{- if .Values.mcp.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "evolution-todo.fullname" . }}-mcp
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "evolution-todo.mcp.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.mcp.service.type }}
+  selector:
+    {{- include "evolution-todo.mcp.selectorLabels" . | nindent 4 }}
+  ports:
+  - name: http
+    port: {{ .Values.mcp.service.port }}
+    targetPort: {{ .Values.mcp.service.targetPort }}
+    protocol: TCP
+{{- end }}

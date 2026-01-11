@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: evolution-todo
+  labels:
+    app.kubernetes.io/name: app-config
+    app.kubernetes.io/part-of: evolution-todo
+data:
+  # Frontend configuration
+  api_url: "http://backend:80"
+  mcp_url: "http://mcp:80"
+
+  # Backend configuration
+  backend_internal_url: "http://backend:80"
+  cors_origins: "http://frontend:80,http://localhost:3000"
+
+  # Database configuration
+  database_host: "postgres"
+  database_port: "5432"
+  database_name: "evolution_todo"
+
+  # Logging
+  log_level: "INFO"
+
+  # Application settings
+  environment: "production"

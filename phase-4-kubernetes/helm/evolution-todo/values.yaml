@@ -1,0 +1,185 @@
+# Default values for evolution-todo
+# This is a YAML-formatted file.
+
+# Global settings
+global:
+  namespace: evolution-todo
+  environment: production
+
+# Frontend configuration
+frontend:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: evolution-todo-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  env:
+    NODE_ENV: production
+
+# Backend configuration
+backend:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: evolution-todo-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8000
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  env:
+    ALGORITHM: "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+
+# MCP Server configuration
+mcp:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: evolution-todo-mcp
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3001
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 15-alpine
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+  auth:
+    database: evolution_todo
+    username: todouser
+    # Password should be set via --set or secrets
+    existingSecret: db-secret
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+  hosts:
+    - host: todo.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /mcp
+          pathType: Prefix
+          service: mcp
+        - path: /ws
+          pathType: Prefix
+          service: mcp
+        - path: /
+          pathType: Prefix
+          service: frontend
+  tls: []
+  #  - secretName: evolution-todo-tls
+  #    hosts:
+  #      - todo.example.com
+
+# ConfigMap settings
+config:
+  apiUrl: "http://backend:80"
+  mcpUrl: "http://mcp:80"
+  backendInternalUrl: "http://backend:80"
+  corsOrigins: "http://frontend:80,http://localhost:3000"
+  logLevel: "INFO"
+
+# Secrets (use external secrets in production)
+secrets:
+  # Create secrets from values (not recommended for production)
+  create: false
+  # Use existing secrets
+  existingDbSecret: db-secret
+  existingAppSecret: app-secret
+
+# Service account
+serviceAccount:
+  create: true
+  name: evolution-todo-sa
+  annotations: {}
+
+# Pod security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

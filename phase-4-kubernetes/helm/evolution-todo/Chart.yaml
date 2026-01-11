@@ -1,0 +1,20 @@
+apiVersion: v2
+name: evolution-todo
+description: A Helm chart for Evolution Todo - Multi-phase Todo Application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - todo
+  - task-management
+  - fastapi
+  - nextjs
+  - mcp
+  - chatbot
+home: https://github.com/your-org/evolution-todo
+sources:
+  - https://github.com/your-org/evolution-todo
+maintainers:
+  - name: Evolution Todo Team
+    email: team@example.com
+dependencies: []

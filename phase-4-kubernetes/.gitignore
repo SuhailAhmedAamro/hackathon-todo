@@ -1,0 +1,19 @@
+# Secrets - NEVER commit these
+k8s/secrets/db-secret.yaml
+k8s/secrets/app-secret.yaml
+
+# Helm release files
+helm/evolution-todo/charts/
+*.tgz
+
+# Local development
+.env
+.env.*
+!.env.example
+
+# Docker
+*.log
+
+# IDE
+.vscode/
+.idea/
