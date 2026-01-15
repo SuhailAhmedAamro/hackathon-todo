@@ -12,6 +12,15 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://localhost/todo_app"
 
+    @property
+    def async_database_url(self) -> str:
+        """Convert DATABASE_URL to async format for SQLAlchemy."""
+        url = self.DATABASE_URL
+        # Railway/Heroku use postgresql://, convert to asyncpg format
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
     # JWT Settings
     SECRET_KEY: str = "your-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"

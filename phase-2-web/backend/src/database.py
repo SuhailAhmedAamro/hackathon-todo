@@ -12,9 +12,9 @@ from typing import AsyncGenerator
 from src.config import settings
 
 
-# Create async engine
+# Create async engine (auto-converts postgresql:// to postgresql+asyncpg://)
 engine: AsyncEngine = create_async_engine(
-    settings.DATABASE_URL,
+    settings.async_database_url,
     echo=settings.DEBUG,  # Log SQL queries in debug mode
     future=True,
     pool_pre_ping=True,  # Verify connections before using
