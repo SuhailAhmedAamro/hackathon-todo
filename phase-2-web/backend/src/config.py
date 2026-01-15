@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"]
 
     # Application
     APP_NAME: str = "Todo App - Phase 2"

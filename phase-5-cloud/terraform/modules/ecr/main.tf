@@ -83,7 +83,7 @@ resource "aws_ecr_lifecycle_policy" "main" {
 }
 
 # =============================================================================
-# Repository Policy (for cross-account access if needed)
+# Repository Policy (for EKS node access)
 # =============================================================================
 
 resource "aws_ecr_repository_policy" "main" {
@@ -95,21 +95,34 @@ resource "aws_ecr_repository_policy" "main" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AllowPull"
+        Sid    = "AllowPullFromEKS"
         Effect = "Allow"
         Principal = {
-          AWS = "*"
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
         }
         Action = [
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
-          "ecr:BatchCheckLayerAvailability"
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:DescribeImages",
+          "ecr:DescribeRepositories"
         ]
-        Condition = {
-          StringEquals = {
-            "aws:PrincipalOrgID" = data.aws_organizations_organization.current.id
-          }
+      },
+      {
+        Sid    = "AllowPush"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
         }
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload"
+        ]
       }
     ]
   })
@@ -120,5 +133,3 @@ resource "aws_ecr_repository_policy" "main" {
 # =============================================================================
 
 data "aws_caller_identity" "current" {}
-
-data "aws_organizations_organization" "current" {}

@@ -237,3 +237,13 @@ variable "create_route53_zone" {
   type        = bool
   default     = false
 }
+
+# =============================================================================
+# Backend Configuration
+# =============================================================================
+
+variable "create_terraform_backend" {
+  description = "Create S3 bucket and DynamoDB table for Terraform state (run once)"
+  type        = bool
+  default     = false
+}
