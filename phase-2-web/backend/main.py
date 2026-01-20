@@ -16,10 +16,11 @@ Setup:
     5. Start server: uvicorn main:app --reload
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
+import json
 
 from src.config import settings
 from src.database import create_db_and_tables, close_db
@@ -92,9 +93,18 @@ app = FastAPI(
 # MIDDLEWARE
 # ============================================================================
 
-# Session middleware (required for OAuth)
+# Session middleware (required for OAuth) - skip for WebSocket
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class WebSocketSkipSessionMiddleware(SessionMiddleware):
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "websocket":
+            await self.app(scope, receive, send)
+        else:
+            await super().__call__(scope, receive, send)
+
 app.add_middleware(
-    SessionMiddleware,
+    WebSocketSkipSessionMiddleware,
     secret_key=settings.SECRET_KEY,
     max_age=3600  # 1 hour session timeout
 )
@@ -120,6 +130,58 @@ app.include_router(tasks_router)
 
 # Tags endpoints
 app.include_router(tags_router)
+
+# ============================================================================
+# WEBSOCKET CHAT ENDPOINT (Phase 3 Integration)
+# ============================================================================
+
+@app.websocket("/ws/chat")
+async def websocket_chat(websocket: WebSocket):
+    """
+    WebSocket endpoint for AI chatbot.
+    Simple echo bot with task management hints.
+    """
+    # Accept connection from any origin (for local development)
+    origin = websocket.headers.get("origin", "")
+    await websocket.accept()
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message_data = json.loads(data)
+            user_message = message_data.get("message", "").lower()
+            lang = message_data.get("language", "en")
+
+            # Send typing indicator
+            await websocket.send_json({"type": "typing", "is_typing": True})
+
+            # Simple response logic
+            if "create" in user_message or "add" in user_message or "new" in user_message:
+                response = "To create a task, use the '+ New Task' button on the dashboard! 📝" if lang == "en" else "ٹاسک بنانے کے لیے ڈیش بورڈ پر '+ New Task' بٹن استعمال کریں! 📝"
+            elif "list" in user_message or "show" in user_message or "all" in user_message:
+                response = "Your tasks are displayed on the dashboard. Use filters to find specific tasks! 📋" if lang == "en" else "آپ کے ٹاسک ڈیش بورڈ پر دکھائے گئے ہیں۔ مخصوص ٹاسک تلاش کرنے کے لیے فلٹرز استعمال کریں! 📋"
+            elif "delete" in user_message or "remove" in user_message:
+                response = "Click the delete button (🗑️) on any task to remove it." if lang == "en" else "کسی بھی ٹاسک کو ہٹانے کے لیے ڈیلیٹ بٹن (🗑️) پر کلک کریں۔"
+            elif "complete" in user_message or "done" in user_message or "finish" in user_message:
+                response = "Click the checkbox next to a task to mark it complete! ✅" if lang == "en" else "ٹاسک مکمل کرنے کے لیے اس کے ساتھ والے چیک باکس پر کلک کریں! ✅"
+            elif "help" in user_message or "مدد" in user_message:
+                response = "I can help with: creating tasks, listing tasks, completing tasks, and more! Try saying 'create a task' or 'show my tasks'." if lang == "en" else "میں مدد کر سکتا ہوں: ٹاسک بنانا، ٹاسک دکھانا، ٹاسک مکمل کرنا۔ 'ٹاسک بنائیں' یا 'میرے ٹاسک دکھائیں' کہیں۔"
+            elif "hello" in user_message or "hi" in user_message or "سلام" in user_message:
+                response = "Hello! 👋 How can I help you manage your tasks today?" if lang == "en" else "السلام علیکم! 👋 آج میں آپ کے ٹاسک میں کیسے مدد کر سکتا ہوں?"
+            else:
+                response = "I'm your task assistant! Try: 'create task', 'show tasks', 'help' 🤖" if lang == "en" else "میں آپ کا ٹاسک اسسٹنٹ ہوں! کوشش کریں: 'ٹاسک بنائیں'، 'ٹاسک دکھائیں'، 'مدد' 🤖"
+
+            # Send response
+            await websocket.send_json({
+                "type": "message",
+                "content": response
+            })
+
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+
 
 # ============================================================================
 # HEALTH & INFO ENDPOINTS

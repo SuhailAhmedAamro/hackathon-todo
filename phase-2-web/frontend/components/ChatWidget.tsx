@@ -179,7 +179,7 @@ export default function ChatWidget() {
 
   return (
     <div
-      className="fixed bottom-6 right-6 w-96 h-[600px] bg-white dark:bg-gray-900
+      className="fixed bottom-6 right-6 w-96 h-[450px] bg-white dark:bg-gray-900
                   rounded-2xl shadow-2xl flex flex-col z-50 border-2 border-purple-500/20"
     >
       {/* Header */}
